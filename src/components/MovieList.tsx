@@ -1,6 +1,6 @@
 import IDataList from "../models/IDataList";
 import { getDataFromServer, addToFavourites, removeFromFavourites } from "../service/ApiCalls";
-import { useState, useEffect,ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { ToastContainer, Toast, Row, Col, Container, Form } from "react-bootstrap";
 import MovieItem from "./MovieItem";
 import ToastItem from "./ToastItem";
@@ -15,10 +15,10 @@ type ToastObject = {
 }
 
 const MovieList = (props: Props) => {
- 
+
     const [filteredItems, setFilteredItems] = useState<IDataList[]>([]);
     const [toast, setToast] = useState<ToastObject[]>([]);
-    const [search,setSearch] = useState<string>("");
+    const [search, setSearch] = useState<string>("");
     const [receivedData, setReceivedData] = useState<IDataList[]>([]);
 
     let section = props.match.params.section;
@@ -28,7 +28,7 @@ const MovieList = (props: Props) => {
             const getData = async () => {
                 const data = await getDataFromServer(section);
                 setReceivedData(data);
-                filterItems(search,data);
+                filterItems(search, data);
 
             }
             getData();
@@ -36,14 +36,14 @@ const MovieList = (props: Props) => {
         [section]
     );
 
-    const filterItems = (searchString: string, data : IDataList[]) => {
-        if(searchString !== ""){
+    const filterItems = (searchString: string, data: IDataList[]) => {
+        if (searchString !== "") {
             const filteredMovies = data.filter(
-                movie => movie.title.indexOf(searchString) !== -1
+                movie => movie.title.toLowerCase().indexOf(searchString.toLowerCase()) !== -1
             )
             setFilteredItems(filteredMovies);
         }
-        else{
+        else {
             setFilteredItems(data);
         }
     }
@@ -51,7 +51,7 @@ const MovieList = (props: Props) => {
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
         const searchString = event.target.value;
         setSearch(searchString);
-        filterItems(searchString,receivedData);
+        filterItems(searchString, receivedData);
     }
 
     const handleFavourites = async (movie: IDataList) => {
@@ -61,7 +61,7 @@ const MovieList = (props: Props) => {
                 const itemsAfterDelete = receivedData.filter(data => data.id !== movie.id);
                 setToast([...toast, { toastString: `${movie.title} removed from Favourites`, toastBgType: "success" }]);
                 setReceivedData(itemsAfterDelete);
-                filterItems(search,itemsAfterDelete);
+                filterItems(search, itemsAfterDelete);
             }
             else {
                 const favouriteMovies = await getDataFromServer("favourite");
@@ -86,29 +86,41 @@ const MovieList = (props: Props) => {
     return (
         <>
             <Container>
-            <Form style={{position:"sticky", top:"0px",zIndex: 1}}>
-                <Form.Group className="mb-3" controlId="formBasicEmail">
-                    <Form.Control type="text" placeholder="Search for a movie" value={search} onChange={handleSearch}/>
-                </Form.Group>
-            </Form>
+                <Form style={{ position: "sticky", top: "0px", zIndex: 1 }}>
+                    <Form.Group className="mb-3" controlId="formBasicEmail">
+                        <Form.Control type="text" placeholder="Search for a movie" value={search} onChange={handleSearch} />
+                    </Form.Group>
+                </Form>
                 <ToastContainer className="p-3" style={{ zIndex: 2, position: "fixed", right: "20px", top: "20px" }}>
                     {
                         toast.map((toast, idx) => <ToastItem key={idx} toastString={toast.toastString} toastBgType={toast.toastBgType} />)
                     }
                 </ToastContainer>
-                <Row lg={4}>
-                    {
-                        filteredItems.map((movie, idx) => {
-                            return (
-                                <Col key={idx} className="d-flex align-items-stretch my-3">
-                                    <MovieItem movie={movie} handleFavourites={handleFavourites} favouriteText={favouriteText} />
-                                </Col>
-                            )
-                        }
-                        )
+                {
+                    filteredItems.length > 0 ?
+                        (
+                            <Row lg={6} md={4} sm={3} xs={2}>
+                                {
+                                    filteredItems.map((movie, idx) => {
+                                        return (
+                                            <Col key={idx} className="d-flex align-items-stretch my-3">
+                                                <MovieItem movie={movie} handleFavourites={handleFavourites} favouriteText={favouriteText} />
+                                            </Col>
+                                        )
+                                    }
+                                    )
 
-                    }
-                </Row>
+                                }
+                            </Row>
+                        ) : (
+                            <div className="d-flex justify-content-center align-items-center" style={{ height: "80vh" }}>
+                                {
+                                    section === "favourite" ?
+                                        "Favourites is empty. Please add movies." : "No data found."
+                                }
+                            </div>
+                        )
+                }
             </Container>
         </>
     )

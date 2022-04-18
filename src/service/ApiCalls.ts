@@ -24,13 +24,5 @@ const removeFromFavourites = (id : string | number) => {
         }
     }).then(response => response.data)
 }
-/*
-const pushDataFromUser = (formData: Omit<IDataList, "id">) => {
-    return axios.post<IDataList>(`http://localhost:3001/items`, formData, {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }).then(response => response.data)
-}
-*/
-export { getDataFromServer, addToFavourites, removeFromFavourites }
+
+export { getDataFromServer, addToFavourites, removeFromFavourites };
