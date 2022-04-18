@@ -1,9 +1,8 @@
 import IDataList from "../models/IDataList";
 import { getDataFromServer, addToFavourites, removeFromFavourites } from "../service/ApiCalls";
-import { useState, useEffect } from "react";
-import { ToastContainer, Toast, Row, Col, Container } from "react-bootstrap";
+import { useState, useEffect,ChangeEvent } from "react";
+import { ToastContainer, Toast, Row, Col, Container, Form } from "react-bootstrap";
 import MovieItem from "./MovieItem";
-import { idText } from "typescript";
 import ToastItem from "./ToastItem";
 
 type Props = {
@@ -11,13 +10,16 @@ type Props = {
 }
 
 type ToastObject = {
-    toastString : string,
-    toastBgType : string
+    toastString: string,
+    toastBgType: string
 }
 
 const MovieList = (props: Props) => {
-    const [items, setItems] = useState<IDataList[]>([]);
+ 
+    const [filteredItems, setFilteredItems] = useState<IDataList[]>([]);
     const [toast, setToast] = useState<ToastObject[]>([]);
+    const [search,setSearch] = useState<string>("");
+    const [receivedData, setReceivedData] = useState<IDataList[]>([]);
 
     let section = props.match.params.section;
 
@@ -25,73 +27,89 @@ const MovieList = (props: Props) => {
         () => {
             const getData = async () => {
                 const data = await getDataFromServer(section);
-                setItems(data);
-                console.log(data);
+                setReceivedData(data);
+                filterItems(search,data);
+
             }
             getData();
         },
         [section]
     );
 
-    const handleFavourites = async (movie : IDataList) => {
+    const filterItems = (searchString: string, data : IDataList[]) => {
+        if(searchString !== ""){
+            const filteredMovies = data.filter(
+                movie => movie.title.indexOf(searchString) !== -1
+            )
+            setFilteredItems(filteredMovies);
+        }
+        else{
+            setFilteredItems(data);
+        }
+    }
+
+    const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
+        const searchString = event.target.value;
+        setSearch(searchString);
+        filterItems(searchString,receivedData);
+    }
+
+    const handleFavourites = async (movie: IDataList) => {
         try {
-            if(section === "favourite"){
+            if (section === "favourite") {
                 const data = await removeFromFavourites(movie.id);
-                const itemsAfterDelete = items.filter(data => data.id !== movie.id);
-                setToast([...toast, {toastString : `${movie.title} removed from Favourites`, toastBgType : "success"}]);
-                setItems(itemsAfterDelete);
+                const itemsAfterDelete = receivedData.filter(data => data.id !== movie.id);
+                setToast([...toast, { toastString: `${movie.title} removed from Favourites`, toastBgType: "success" }]);
+                setReceivedData(itemsAfterDelete);
+                filterItems(search,itemsAfterDelete);
             }
             else {
                 const favouriteMovies = await getDataFromServer("favourite");
                 const movieAlreadyPresent = favouriteMovies.filter(data => data.title === movie.title);
-                if(movieAlreadyPresent.length === 0){
-                    const {id, ...movieWithoutId} = movie;
+                if (movieAlreadyPresent.length === 0) {
+                    const { id, ...movieWithoutId } = movie;
                     const data = await addToFavourites(movieWithoutId);
-                    setToast([...toast, {toastString : `${movie.title} added to Favourites`, toastBgType : "info"}]);
-                    console.log("Movie Added");
+                    setToast([...toast, { toastString: `${movie.title} added to Favourites`, toastBgType: "info" }]);
                 }
                 else {
-                    setToast([...toast, {toastString : `${movie.title} already present in Favourites`, toastBgType : "warning"}]);
-                    console.log("Movie Already present");
+                    setToast([...toast, { toastString: `${movie.title} already present in Favourites`, toastBgType: "warning" }]);
                 }
             }
         }
-        catch(e : any){
+        catch (e: any) {
             console.log(e.message);
         }
     }
 
-    const favouriteText = section === "favourite" ? "Remove from favourites" : "Add to favourites"; 
+    const favouriteText = section === "favourite" ? "Remove from favourites" : "Add to favourites";
 
     return (
         <>
-            {
-
-            }
-
             <Container>
-            <ToastContainer className="p-3"  style={{zIndex : 1,position: "fixed",right: "20px",top: "20px"}}>
-                {
-                    toast.map((toast,idx) => <ToastItem key={idx} toastString={toast.toastString} toastBgType={toast.toastBgType}/>)                           
-                }
-            </ToastContainer>
-            <Row lg={4}>
-                {
-                    items.map((movie, idx) => {
-                        return (
-                            <Col key={idx} className="d-flex align-items-stretch my-3">
-                                <MovieItem movie={movie} handleFavourites={handleFavourites} favouriteText={favouriteText}/>
-                            </Col>
-                        )
+            <Form style={{position:"sticky", top:"0px",zIndex: 1}}>
+                <Form.Group className="mb-3" controlId="formBasicEmail">
+                    <Form.Control type="text" placeholder="Search for a movie" value={search} onChange={handleSearch}/>
+                </Form.Group>
+            </Form>
+                <ToastContainer className="p-3" style={{ zIndex: 2, position: "fixed", right: "20px", top: "20px" }}>
+                    {
+                        toast.map((toast, idx) => <ToastItem key={idx} toastString={toast.toastString} toastBgType={toast.toastBgType} />)
                     }
-                    )
+                </ToastContainer>
+                <Row lg={4}>
+                    {
+                        filteredItems.map((movie, idx) => {
+                            return (
+                                <Col key={idx} className="d-flex align-items-stretch my-3">
+                                    <MovieItem movie={movie} handleFavourites={handleFavourites} favouriteText={favouriteText} />
+                                </Col>
+                            )
+                        }
+                        )
 
-                }
-            </Row>
+                    }
+                </Row>
             </Container>
-
-
-
         </>
     )
 
