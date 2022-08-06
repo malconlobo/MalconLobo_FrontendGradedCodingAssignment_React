@@ -3,7 +3,7 @@ pipeline {
      stages {
         stage("Build") {
             steps {
-                sh "sudo npm install"
+                sh "sudo ~/.nvm/versions/node/v16.16.0/bin/npm install"
                 sh "sudo npm run build"
             }
         }
